@@ -14,6 +14,7 @@ function doPost(e) {
       case 'read': return read_(ss, body);
       case 'ensure_tab': return ensureTab_(ss, body);
       case 'append': return append_(ss, body);
+      case 'delete_rows': return deleteRows_(ss, body);
       default: return appendLegacy_(ss, body); // back-compat: {rows:[...]} -> default tab
     }
   } catch (err) {
@@ -65,6 +66,13 @@ function append_(ss, body) {
   sheet.getRange(start, 2, rows.length, 1).setNumberFormat('"$"#,##0.00'); // Cost
   sheet.getRange(start, 5, rows.length, 1).setNumberFormat('m/d/yyyy');    // Date
   return json_({ ok: true, appended: rows.length });
+}
+
+function deleteRows_(ss, body) {
+  var sheet = ss.getSheetByName(body.tab);
+  if (!sheet) return json_({ ok: false, error: 'tab not found: ' + body.tab });
+  sheet.deleteRows(body.start_row, body.num_rows);
+  return json_({ ok: true, deleted: body.num_rows });
 }
 
 function appendLegacy_(ss, body) {

@@ -17,6 +17,12 @@ def test_append_returns_count():
     c = SheetClient("u", "s", http_post=post)
     assert c.append("6/1-6/7", 5, [["a"],["b"]], ["teller-id:x", ""]) == 2
 
+def test_delete_rows():
+    post = FakePost({"delete_rows": {"ok": True, "deleted": 3}})
+    c = SheetClient("u", "s", http_post=post)
+    assert c.delete_rows("6/1-6/7", 5, 3) == 3
+    assert post.calls[0] == {"action": "delete_rows", "tab": "6/1-6/7", "start_row": 5, "num_rows": 3, "secret": "s"}
+
 def test_raises_on_not_ok():
     post = FakePost({"list_tabs": {"ok": False, "error": "bad secret"}})
     c = SheetClient("u", "s", http_post=post)

@@ -41,3 +41,7 @@ class SheetClient:
     def append(self, tab: str, start_row: int, rows: list[list], notes: list[str]) -> int:
         return self._call({"action": "append", "tab": tab, "start_row": start_row,
                            "rows": rows, "notes": notes})["appended"]
+
+    def delete_rows(self, tab: str, start_row: int, num_rows: int) -> int:
+        return self._call({"action": "delete_rows", "tab": tab,
+                           "start_row": start_row, "num_rows": num_rows})["deleted"]
