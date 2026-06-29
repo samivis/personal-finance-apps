@@ -47,7 +47,11 @@ def row_for_txn(t: Txn) -> tuple[list, str]:
 def base_weekly_budget(client) -> Decimal:
     values, _ = client.read("'Monthly Budget'!C20")
     raw = values[0][0] if values and values[0] else ""
-    return Decimal(str(raw).replace("$", "").replace(",", "").strip())
+    cleaned = str(raw).replace("$", "").replace(",", "").strip()
+    try:
+        return Decimal(cleaned)
+    except Exception:
+        raise RuntimeError("Could not read base weekly budget from 'Monthly Budget'!C20")
 
 
 def prev_total_left(client, week_start: dt.date) -> Decimal | None:
@@ -113,7 +117,6 @@ def sync_week(client, week_start: dt.date, week_txns: list[Txn]) -> tuple[str, i
         key = (str(row[0]).strip() if len(row) > 0 else "",
                _amount_key(row[1] if len(row) > 1 else ""),
                str(row[4]).strip() if len(row) > 4 else "")
-        content_rows.setdefault(key, []).append(i)
         note = ""
         idx = i - 2
         if idx < len(notes) and notes[idx]:
@@ -121,6 +124,8 @@ def sync_week(client, week_start: dt.date, week_txns: list[Txn]) -> tuple[str, i
         tid = parse_teller_id_note(note)
         if tid:
             id_to_row[tid] = i
+        else:
+            content_rows.setdefault(key, []).append(i)
 
     new_rows: list[list] = []
     new_notes: list[str] = []

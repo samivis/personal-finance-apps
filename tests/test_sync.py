@@ -14,7 +14,7 @@ def test_parse_note():
 
 def test_row_for_txn():
     row, note = row_for_txn(mk("txn_1", "TST* SIDECAR DOUGHNUTS", "6.50", dt.date(2026,6,24)))
-    assert row[0] == "Sidecar Doughnuts" or row[0]  # pretty name
+    assert row[0] == "Sidecar Doughnuts"  # pretty name
     assert row[2] == "Variable"        # Type
     assert row[3] == "Food"            # Category
     assert row[4] == "6/24/2026"       # Date
@@ -49,3 +49,17 @@ def test_sync_week_dedupes_by_note():
     txns = [mk("txn_1", "TST* SIDECAR DOUGHNUTS", "6.50", dt.date(2026,6,24))]
     tab, added, updated = sync_week(client, dt.date(2026,6,21), txns)
     assert added == 0  # already present by note
+
+def test_sync_week_distinct_teller_id_same_content_not_dropped():
+    # txn_1 already synced (has teller-id note); txn_2 has same content but different id -> must be added
+    reads = {
+        "'Monthly Budget'!C20": ([["200"]], [[""]]),
+        "'6/21-6/27'!A2:F2000": (
+            [["Sidecar Doughnuts", "6.5", "Variable", "Food", "6/24/2026", ""]],
+            [["teller-id:txn_1"]],
+        ),
+    }
+    client = FakeClient(tabs=["Monthly Budget", "6/21-6/27"], reads=reads)
+    txns = [mk("txn_2", "TST* SIDECAR DOUGHNUTS", "6.50", dt.date(2026, 6, 24))]
+    tab, added, updated = sync_week(client, dt.date(2026, 6, 21), txns)
+    assert added == 1  # distinct teller-id must not be swallowed by content-match
