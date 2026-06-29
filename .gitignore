@@ -33,3 +33,7 @@ venv/
 
 # --- macOS ---
 .DS_Store
+
+# --- Scratch / agent working files ---
+.sdd-*.md
+_mini-finance-import/
