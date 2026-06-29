@@ -17,9 +17,10 @@ def _parse_one_date(token: str, today: dt.date) -> dt.date:
         return today - dt.timedelta(days=1)
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d"):
         try:
-            d = dt.datetime.strptime(token, fmt).date()
             if fmt == "%m/%d":
-                d = d.replace(year=today.year)
+                d = dt.datetime.strptime(f"{token}/{today.year}", "%m/%d/%Y").date()
+            else:
+                d = dt.datetime.strptime(token, fmt).date()
             return d
         except ValueError:
             pass
