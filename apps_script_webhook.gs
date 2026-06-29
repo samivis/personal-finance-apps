@@ -16,6 +16,7 @@ function doPost(e) {
       case 'append': return append_(ss, body);
       case 'delete_rows': return deleteRows_(ss, body);
       case 'move_tab': return moveTab_(ss, body);
+      case 'set_formula': return setFormula_(ss, body);
       default: return appendLegacy_(ss, body); // back-compat: {rows:[...]} -> default tab
     }
   } catch (err) {
@@ -41,7 +42,8 @@ function ensureTab_(ss, body) {
   var sheet = ss.insertSheet(name, 1);  // index 1 = second tab (right after Monthly Budget)
   sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
   sheet.setFrozenRows(1);
-  sheet.getRange('H9:I9').setValues([['Weekly Budget', body.weekly_budget]]);
+  sheet.getRange('H9').setValue('Weekly Budget');
+  sheet.getRange('I9').setFormula(body.weekly_budget_formula);
   sheet.getRange('H10').setValue('Total Left');
   sheet.getRange('I10').setFormula(body.total_left_formula);
   // dropdowns on C (Type) and D (Category), rows 2..1000
@@ -82,6 +84,13 @@ function moveTab_(ss, body) {
   ss.setActiveSheet(sheet);
   ss.moveActiveSheet(body.position);  // 1-based position
   return json_({ ok: true, moved: body.tab, position: body.position });
+}
+
+function setFormula_(ss, body) {
+  var sheet = ss.getSheetByName(body.tab);
+  if (!sheet) return json_({ ok: false, error: 'tab not found: ' + body.tab });
+  sheet.getRange(body.cell).setFormula(body.formula);
+  return json_({ ok: true });
 }
 
 function appendLegacy_(ss, body) {

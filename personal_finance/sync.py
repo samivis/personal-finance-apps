@@ -69,6 +69,20 @@ def prev_total_left(client, week_start: dt.date) -> Decimal | None:
     return None
 
 
+def weekly_budget_formula(week_start: dt.date, existing_tabs) -> str:
+    """The Weekly Budget (I9) as a LIVE cascading formula.
+
+    Earliest week (no prior tab) → just the base weekly variable budget.
+    Every later week → base + the prior week's live 'Total Left' (I10), floored
+    at 0. Because it references the prior tab's cell, a change in any earlier
+    week ripples forward automatically — no recompute needed."""
+    prev_start, prev_end = previous_week_window_for(week_start)
+    prev_tab = tab_name_for_week(prev_start, prev_end)
+    if prev_tab in set(existing_tabs):
+        return f"=MAX(0,'Monthly Budget'!C20+'{prev_tab}'!I10)"
+    return "='Monthly Budget'!C20"
+
+
 def _amount_key(v) -> str:
     s = str(v or "").strip().replace("$", "").replace(",", "")
     try:
@@ -100,11 +114,10 @@ def sync_week(client, week_start: dt.date, week_txns: list[Txn]) -> tuple[str, i
     if not week:
         return tab, 0, 0
 
-    # create tab with rollover budget if missing
+    # create tab with cascading rollover-budget FORMULA if missing
     if tab not in client.list_tabs():
-        base = base_weekly_budget(client)
-        budget = compute_weekly_budget(base, prev_total_left(client, week_start))
-        client.ensure_tab(tab, float(budget), TOTAL_LEFT_FORMULA)
+        formula = weekly_budget_formula(week_start, client.list_tabs())
+        client.ensure_tab(tab, formula, TOTAL_LEFT_FORMULA)
 
     # read existing rows + notes for dedup
     values, notes = client.read(f"'{tab}'!A2:F2000")

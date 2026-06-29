@@ -29,15 +29,23 @@ class FakeClient:
     def ensure_tab(self, tab, wb, f): self.ensured.append((tab, wb)); self._tabs.append(tab); return True
     def append(self, tab, start, rows, notes): self.appended.append((tab, start, rows, notes)); return len(rows)
 
-def test_sync_week_creates_tab_and_appends_new():
-    # base budget from Monthly Budget!C20 = 200, no prior tab -> budget 200
+def test_sync_week_creates_tab_with_base_formula_when_no_prior():
+    # no prior tab -> budget formula is just the base cell
     reads = {"'Monthly Budget'!C20": ([["200"]], [[""]])}
     client = FakeClient(tabs=["Monthly Budget"], reads=reads)
     txns = [mk("txn_1", "TST* SIDECAR DOUGHNUTS", "6.50", dt.date(2026,6,24))]
     tab, added, updated = sync_week(client, dt.date(2026,6,21), txns)
     assert tab == "6/21-6/27"
     assert added == 1 and updated == 0
-    assert client.ensured and client.ensured[0][1] == 200.0
+    assert client.ensured and client.ensured[0][1] == "='Monthly Budget'!C20"
+
+def test_sync_week_creates_tab_with_cascading_formula_when_prior_exists():
+    # prior week tab 6/14-6/20 exists -> budget cascades from its I10
+    reads = {"'6/14-6/20'!A2:F2000": ([], [])}
+    client = FakeClient(tabs=["Monthly Budget", "6/14-6/20"], reads=reads)
+    txns = [mk("txn_9", "TST* SIDECAR DOUGHNUTS", "6.50", dt.date(2026,6,24))]
+    tab, added, updated = sync_week(client, dt.date(2026,6,21), txns)
+    assert client.ensured[0][1] == "=MAX(0,'Monthly Budget'!C20+'6/14-6/20'!I10)"
 
 def test_sync_week_dedupes_by_note():
     reads = {

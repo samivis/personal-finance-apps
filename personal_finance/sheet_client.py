@@ -33,10 +33,14 @@ class SheetClient:
         res = self._call({"action": "read", "range": range_})
         return res.get("values", []), res.get("notes", [])
 
-    def ensure_tab(self, tab: str, weekly_budget: float, total_left_formula: str) -> bool:
+    def ensure_tab(self, tab: str, weekly_budget_formula: str, total_left_formula: str) -> bool:
         return self._call({"action": "ensure_tab", "tab": tab,
-                           "weekly_budget": weekly_budget,
+                           "weekly_budget_formula": weekly_budget_formula,
                            "total_left_formula": total_left_formula})["created"]
+
+    def set_formula(self, tab: str, cell: str, formula: str) -> None:
+        """Set a single cell to a formula (used to migrate existing tabs)."""
+        self._call({"action": "set_formula", "tab": tab, "cell": cell, "formula": formula})
 
     def append(self, tab: str, start_row: int, rows: list[list], notes: list[str]) -> int:
         return self._call({"action": "append", "tab": tab, "start_row": start_row,

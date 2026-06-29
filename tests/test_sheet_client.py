@@ -23,6 +23,13 @@ def test_delete_rows():
     assert c.delete_rows("6/1-6/7", 5, 3) == 3
     assert post.calls[0] == {"action": "delete_rows", "tab": "6/1-6/7", "start_row": 5, "num_rows": 3, "secret": "s"}
 
+def test_set_formula():
+    post = FakePost({"set_formula": {"ok": True}})
+    c = SheetClient("u", "s", http_post=post)
+    c.set_formula("6/21-6/27", "I9", "=MAX(0,'Monthly Budget'!C20+'6/14-6/20'!I10)")
+    assert post.calls[0]["action"] == "set_formula"
+    assert post.calls[0]["cell"] == "I9"
+
 def test_move_tab():
     post = FakePost({"move_tab": {"ok": True, "moved": "6/21-6/27", "position": 2}})
     c = SheetClient("u", "s", http_post=post)
