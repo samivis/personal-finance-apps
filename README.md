@@ -1,79 +1,132 @@
 # personal-finance-apps
 
-A small, dependency-free toolkit for automating a personal budget: pull bank
-transactions, categorize them, and sync them to a Google Sheet — without a fragile
-OAuth integration that breaks every week.
+A small, dependency-free toolkit that asks for a date range, pulls bank transactions
+from [Teller](https://teller.io), and syncs them into **Sun–Sat weekly tabs** of a
+Google Sheet — without a fragile OAuth token that expires every 7 days.
 
 > This is the open-source **engine**. All personal data (real transactions, merchant
 > names, budget figures, bank credentials) lives outside this repo and is never
-> committed — see [Security model](#security-model).
+> committed — see [Security](#security).
 
-## Why this exists
+---
 
-Most "connect your bank to a spreadsheet" setups rely on a Google OAuth app. Apps left
-in Google's *Testing* publishing status hand out refresh tokens that expire after
-exactly **7 days**, so the sync silently dies every week. This project sidesteps that
-entirely:
+## What it does
 
-- **Bank data** comes from [Teller](https://teller.io) over mutual-TLS, called directly
-  (no broker), so a disconnected enrollment is detected and flagged instead of crashing
-  the run.
-- **Sheet writes** go through a Google **Apps Script Web App** that lives inside the
-  sheet and runs as the owner — authenticated by a shared secret, not an OAuth token.
-  Nothing expires. Deploy once.
+```
+python3 budget_sync.py "last week"
+```
+
+1. Parses a flexible date-range string (`last week`, `yesterday to today`, `6/1 to 6/15`).
+2. Fetches transactions from every linked Teller account over mutual-TLS.
+3. Groups transactions by Sun–Sat week and identifies the correct Google Sheet tab for each week.
+4. Deduplicates using `teller-id` stored in Google Sheets cell notes — reruns are safe.
+5. Writes new rows and updates changed amounts; prints a per-tab summary.
+
+---
 
 ## Architecture
 
 ```
-Teller API (mTLS)  ─┐
-                    ├─►  daily_budget_update.py  ─►  Apps Script webhook  ─►  Google Sheet
-merchant map (JSON)─┘        │  fetch → dedupe → categorize → append → persist state
-                            └─►  learns categories back from your sheet edits
+budget_sync.py  (entry point)
+      │
+      ▼
+personal_finance/           ← stdlib-only Python package
+  orchestrator.py           ← parse range → fetch → group by week → sync each tab
+  teller.py                 ← mutual-TLS calls to Teller API
+  daterange.py              ← flexible natural-language date parser
+  weeks.py                  ← Sun–Sat window logic + cascading rollover formula
+  sync.py                   ← dedup + write via webhook
+  sheet_client.py           ← HTTP client for the Apps Script webhook
+  categorize.py             ← vendor → category rules (loaded from private data dir)
+
+apps_script_webhook.gs      ← Google Apps Script deployed inside the Sheet
 ```
 
-### `daily_budget_update.py`
-A single standalone script (Python stdlib only) that:
-1. Loads run state (which transactions it has already recorded).
-2. Fetches recent transactions from every linked Teller account over mTLS.
-3. Deduplicates by transaction id and a date+merchant+amount+account fingerprint.
-4. Categorizes each transaction from a merchant map; flags business expenses on
-   personal cards.
-5. Appends new rows to the sheet via the webhook.
-6. Marks transactions "seen" **only** after a successful write (never on a dry run).
-7. **Auto-learns**: reads categories you corrected in the sheet and folds them back into
-   the merchant map, so each merchant is only ever categorized by hand once.
+### Why Apps Script instead of the Sheets API directly
+
+Google OAuth *Testing* apps issue refresh tokens that expire after exactly **7 days**.
+The Apps Script approach runs the webhook **as the sheet owner** using a shared secret —
+nothing expires, deploy once and forget it.
+
+### Cascading rollover
+
+Each week's **Weekly Budget** cell is a live Google Sheets formula:
+
+```
+=MAX(0, 'Monthly Budget'!C20 + prevWeek!I10)
+```
+
+Unspent money from the previous week rolls forward automatically. Overspending is
+floored at zero (debt doesn't compound).
+
+---
+
+## Running
 
 ```bash
-python3 daily_budget_update.py            # live run
-python3 daily_budget_update.py --dry-run  # build rows, write a CSV, never touch the sheet
-python3 daily_budget_update.py --hours 168  # widen the lookback window
+python3 budget_sync.py "last week"
+python3 budget_sync.py "yesterday to today"
+python3 budget_sync.py "6/1 to 6/15"
 ```
 
-### `apps_script_webhook.gs`
-Paste into the sheet's Apps Script editor (Extensions → Apps Script), set a long random
-`SHARED_SECRET`, and deploy as a Web App (*Execute as: Me*, *Who has access: Anyone*).
-Supports `doPost` (append rows) and `doGet?action=read` (read rows back for auto-learn).
+The script prompts for a date range if none is given on the command line.
 
-## Setup
+### Prerequisites
 
-1. **Teller**: create a Teller app, download your mTLS cert/key, and store them with your
-   connection config (this toolkit reads them from `~/.bank-mcp/`).
-2. **Webhook**: deploy `apps_script_webhook.gs`, then save your `/exec` URL + secret to
-   `~/.config/daily-budget/webhook.json` as `{"url": "...", "secret": "..."}`.
-3. Point the runner at your spreadsheet id + tab gid via its state file.
+| What | Where |
+|------|--------|
+| Teller mTLS cert + key | `~/.bank-mcp/keys/teller/certificate.pem` and `private_key.pem` |
+| Teller config (enrollment/account IDs) | `~/.bank-mcp/config.json` |
+| Webhook URL + secret | `~/.config/daily-budget/webhook.json` → `{"url": "...", "secret": "..."}` |
+| Vendor rules (optional) | `../context/personal/data/finance/vendor-rules.json` |
 
-See [`examples/`](./examples) for the shape of the merchant map and the budget spec.
+### Webhook setup
 
-## Security model
+1. Open your Google Sheet → Extensions → Apps Script.
+2. Paste `apps_script_webhook.gs`, set `SHARED_SECRET` to a long random string.
+3. Deploy as Web App (*Execute as: Me*, *Who has access: Anyone*).
+4. Save the `/exec` URL and your secret to `~/.config/daily-budget/webhook.json`.
 
-Code is public; data is not. The following are **git-ignored and never committed**:
+---
 
-- mTLS keys/certs (`*.pem`), Teller config, the webhook secret/URL
-- Your real merchant map and run state (these live in a separate private repo)
-- The real budget spec, bank statements, and generated reports
+## Tests
 
-The webhook script ships with a placeholder secret; the real value exists only in your
-deployed Google Apps Script and your local `~/.config`.
+```bash
+python3 -m pytest tests/ -q
+```
+
+The test suite covers date parsing, week windowing, dedup logic, sheet client, and
+the orchestrator — all with no network calls (Teller and Sheets are fully mocked).
+
+---
+
+## Repository layout
+
+```
+budget_sync.py              ← CLI entry point
+personal_finance/           ← Python package (stdlib only)
+apps_script_webhook.gs      ← Apps Script for the sheet webhook
+tests/                      ← pytest suite
+examples/                   ← sample merchant-categories and budget-spec formats
+docs/superpowers/           ← spec and implementation plan (preserved for reference)
+```
+
+---
+
+## Security
+
+Code is public; **all secrets and personal data are git-ignored and never committed**:
+
+- mTLS keys / certs (`*.pem`, `*.key`)
+- Webhook URL and secret (`webhook.json`)
+- Teller config, enrollment IDs, and access tokens (`config.json`)
+- Real merchant map, run state, and budget figures (kept in a separate private repo)
+- Bank statements and generated reports
+
+`apps_script_webhook.gs` ships with the placeholder `CHANGE_ME_TO_A_LONG_RANDOM_STRING`;
+the real secret exists only in your deployed Apps Script and your local `~/.config`.
+
+---
 
 ## License
 
