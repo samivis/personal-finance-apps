@@ -15,6 +15,7 @@ function doPost(e) {
       case 'ensure_tab': return ensureTab_(ss, body);
       case 'append': return append_(ss, body);
       case 'delete_rows': return deleteRows_(ss, body);
+      case 'move_tab': return moveTab_(ss, body);
       default: return appendLegacy_(ss, body); // back-compat: {rows:[...]} -> default tab
     }
   } catch (err) {
@@ -37,7 +38,7 @@ function read_(ss, body) {
 function ensureTab_(ss, body) {
   var name = body.tab;
   if (ss.getSheetByName(name)) return json_({ ok: true, created: false });
-  var sheet = ss.insertSheet(name);
+  var sheet = ss.insertSheet(name, 1);  // index 1 = second tab (right after Monthly Budget)
   sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
   sheet.setFrozenRows(1);
   sheet.getRange('H9:I9').setValues([['Weekly Budget', body.weekly_budget]]);
@@ -73,6 +74,14 @@ function deleteRows_(ss, body) {
   if (!sheet) return json_({ ok: false, error: 'tab not found: ' + body.tab });
   sheet.deleteRows(body.start_row, body.num_rows);
   return json_({ ok: true, deleted: body.num_rows });
+}
+
+function moveTab_(ss, body) {
+  var sheet = ss.getSheetByName(body.tab);
+  if (!sheet) return json_({ ok: false, error: 'tab not found: ' + body.tab });
+  ss.setActiveSheet(sheet);
+  ss.moveActiveSheet(body.position);  // 1-based position
+  return json_({ ok: true, moved: body.tab, position: body.position });
 }
 
 function appendLegacy_(ss, body) {

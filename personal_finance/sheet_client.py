@@ -45,3 +45,7 @@ class SheetClient:
     def delete_rows(self, tab: str, start_row: int, num_rows: int) -> int:
         return self._call({"action": "delete_rows", "tab": tab,
                            "start_row": start_row, "num_rows": num_rows})["deleted"]
+
+    def move_tab(self, tab: str, position: int) -> None:
+        """Move `tab` to a 1-based position in the sheet's tab order."""
+        self._call({"action": "move_tab", "tab": tab, "position": position})
