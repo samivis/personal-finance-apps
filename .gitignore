@@ -1,0 +1,35 @@
+# --- Secrets & credentials (NEVER commit) ---
+# These live outside the repo by design, but block them defensively anyway.
+*.pem
+*.key
+.env
+.env.*
+webhook.json
+config.json
+config.backup.*.json
+
+# --- Personal financial data (private — lives in the private `context` repo) ---
+daily-budget-state.json
+merchant-categories.json
+openclaw-daily-budget-prompt.md
+BANK_MCP_SETUP_SUMMARY.md
+amex-*.md
+chase-*.md
+reports/
+outputs/
+*.statement.*
+*statement*.pdf
+
+# --- Internal / machine-specific notes ---
+MINI_HANDOFF_PROMPT.md
+CLAUDE.md
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# --- macOS ---
+.DS_Store

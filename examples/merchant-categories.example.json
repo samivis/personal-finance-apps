@@ -1,0 +1,20 @@
+{
+  "_description": "Example merchant→category map. The runner matches a transaction's description against these keys (exact first, then case-insensitive substring) and applies the category/fixed flag. The real map is private; this shows the shape with fictional merchants.",
+  "mappings": {
+    "Trader Joe": { "category": "Groceries", "fixed": false },
+    "Whole Foods": { "category": "Groceries", "fixed": false },
+    "Blue Bottle Coffee": { "category": "Eating Out", "fixed": false },
+    "Shell": { "category": "Transportation", "fixed": false },
+    "CVS": { "category": "Health & Wellness", "fixed": false },
+    "Acme Gym": { "category": "Health & Wellness", "fixed": true, "note": "Monthly membership" },
+    "Landlord Rent": { "category": "Other", "fixed": true, "note": "Monthly rent" },
+    "Amazon": { "category": "Shopping", "fixed": false },
+    "Netflix": { "category": "Other", "fixed": true, "note": "Subscription" },
+    "Some SaaS Inc": { "category": "Business", "fixed": false, "note": "Move to business card" }
+  },
+  "red_flags": [
+    { "pattern": "old car loan", "reason": "Loan paid off — should not recur" },
+    { "pattern": "canceled gym", "reason": "Membership canceled" }
+  ],
+  "last_updated": "2026-01-01"
+}
