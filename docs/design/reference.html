@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finance Dashboard — Design Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --canvas: #F2F1EC;
+    --panel: #FFFFFF;
+    --ink: #111111;
+    --label: #9A9A9A;
+    --nav-inactive: #B0B0B0;
+    --hairline: #E5E5E2;
+    --track: #E8E8E5;
+    --ph-from: #F4F4F2;
+    --ph-to: #EDEDEA;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--canvas);
+    font-family: "Söhne", "Suisse Int'l", "Neue Haas Grotesk", "Inter",
+                 -apple-system, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "lnum" 1, "tnum" 1;
+    color: var(--ink);
+  }
+  .wrap {
+    max-width: 1120px;
+    margin: 40px auto;
+    padding: 0 16px;
+  }
+  .panel {
+    background: var(--panel);
+    border-radius: 6px;
+    padding: 64px;
+  }
+
+  /* Nav */
+  nav {
+    display: flex;
+    justify-content: flex-end;
+    gap: 32px;
+    margin-bottom: 80px;
+  }
+  nav a {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--nav-inactive);
+    transition: color 200ms cubic-bezier(0.4,0,0.2,1);
+  }
+  nav a.active { color: var(--ink); }
+  nav a:hover { color: var(--ink); }
+
+  /* Metric row */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+    margin-bottom: 80px;
+  }
+  .label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--label);
+  }
+  .metric .value {
+    font-size: 44px;
+    font-weight: 350;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    margin-top: 12px;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  /* Section header */
+  .section-header { margin-bottom: 32px; }
+  .section-header .hairline {
+    height: 1px;
+    background: var(--hairline);
+    margin-top: 16px;
+  }
+
+  /* Allocation cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+  .card .image {
+    aspect-ratio: 1 / 1;
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--ph-from), var(--ph-to));
+  }
+  .card .clabel {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-top: 16px;
+  }
+  .card .amount {
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    margin-top: 4px;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .card .bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--track);
+    margin-top: 12px;
+    overflow: hidden;
+  }
+  .card .bar > span {
+    display: block;
+    height: 100%;
+    background: var(--ink);
+    border-radius: 2px;
+    transition: width 600ms cubic-bezier(0.4,0,0.2,1);
+  }
+
+  @media (max-width: 720px) {
+    .panel { padding: 24px; }
+    .metrics, .cards { grid-template-columns: 1fr; gap: 32px; }
+    .metric .value { font-size: 38px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card .bar > span { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <nav>
+        <a href="#" class="active">Overview</a>
+        <a href="#">History</a>
+        <a href="#">Settings</a>
+      </nav>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">Total Liquidity</div>
+          <div class="value">$42,940.00</div>
+        </div>
+        <div class="metric">
+          <div class="label">Monthly Burn</div>
+          <div class="value">$3,120.44</div>
+        </div>
+        <div class="metric">
+          <div class="label">Last Sync</div>
+          <div class="value">12:04:00</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="label">Top Allocations / Current Month</div>
+        <div class="hairline"></div>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <div class="image"></div>
+          <div class="clabel">Housing / Fixed</div>
+          <div class="amount">$1,850.00</div>
+          <div class="bar"><span style="width:92%"></span></div>
+        </div>
+        <div class="card">
+          <div class="image"></div>
+          <div class="clabel">Food &amp; Leisure</div>
+          <div class="amount">$642.10</div>
+          <div class="bar"><span style="width:54%"></span></div>
+        </div>
+        <div class="card">
+          <div class="image"></div>
+          <div class="clabel">Transportation</div>
+          <div class="amount">$218.00</div>
+          <div class="bar"><span style="width:28%"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
