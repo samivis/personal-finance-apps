@@ -45,13 +45,13 @@ def row_for_txn(t: Txn) -> tuple[list, str]:
 
 
 def base_weekly_budget(client) -> Decimal:
-    values, _ = client.read("'Monthly Budget'!C20")
+    values, _ = client.read("'Monthly Budget'!C21")
     raw = values[0][0] if values and values[0] else ""
     cleaned = str(raw).replace("$", "").replace(",", "").strip()
     try:
         return Decimal(cleaned)
     except Exception:
-        raise RuntimeError("Could not read base weekly budget from 'Monthly Budget'!C20")
+        raise RuntimeError("Could not read base weekly budget from 'Monthly Budget'!C21")
 
 
 def prev_total_left(client, week_start: dt.date) -> Decimal | None:
@@ -73,14 +73,16 @@ def weekly_budget_formula(week_start: dt.date, existing_tabs) -> str:
     """The Weekly Budget (I9) as a LIVE cascading formula.
 
     Earliest week (no prior tab) → just the base weekly variable budget.
-    Every later week → base + the prior week's live 'Total Left' (I10), floored
-    at 0. Because it references the prior tab's cell, a change in any earlier
+    Every later week → base + the prior week's live 'Total Left' (I10). The
+    rollover carries forward signed: an overspent prior week yields a negative
+    leftover, so this week correctly starts below the base rather than resetting
+    to 0. Because it references the prior tab's cell, a change in any earlier
     week ripples forward automatically — no recompute needed."""
     prev_start, prev_end = previous_week_window_for(week_start)
     prev_tab = tab_name_for_week(prev_start, prev_end)
     if prev_tab in set(existing_tabs):
-        return f"=MAX(0,'Monthly Budget'!C20+'{prev_tab}'!I10)"
-    return "='Monthly Budget'!C20"
+        return f"='Monthly Budget'!C21+'{prev_tab}'!I10"
+    return "='Monthly Budget'!C21"
 
 
 def _amount_key(v) -> str:

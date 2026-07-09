@@ -31,13 +31,13 @@ class FakeClient:
 
 def test_sync_week_creates_tab_with_base_formula_when_no_prior():
     # no prior tab -> budget formula is just the base cell
-    reads = {"'Monthly Budget'!C20": ([["200"]], [[""]])}
+    reads = {"'Monthly Budget'!C21": ([["200"]], [[""]])}
     client = FakeClient(tabs=["Monthly Budget"], reads=reads)
     txns = [mk("txn_1", "TST* SIDECAR DOUGHNUTS", "6.50", dt.date(2026,6,24))]
     tab, added, updated = sync_week(client, dt.date(2026,6,21), txns)
     assert tab == "6/21-6/27"
     assert added == 1 and updated == 0
-    assert client.ensured and client.ensured[0][1] == "='Monthly Budget'!C20"
+    assert client.ensured and client.ensured[0][1] == "='Monthly Budget'!C21"
 
 def test_sync_week_creates_tab_with_cascading_formula_when_prior_exists():
     # prior week tab 6/14-6/20 exists -> budget cascades from its I10
@@ -45,11 +45,11 @@ def test_sync_week_creates_tab_with_cascading_formula_when_prior_exists():
     client = FakeClient(tabs=["Monthly Budget", "6/14-6/20"], reads=reads)
     txns = [mk("txn_9", "TST* SIDECAR DOUGHNUTS", "6.50", dt.date(2026,6,24))]
     tab, added, updated = sync_week(client, dt.date(2026,6,21), txns)
-    assert client.ensured[0][1] == "=MAX(0,'Monthly Budget'!C20+'6/14-6/20'!I10)"
+    assert client.ensured[0][1] == "='Monthly Budget'!C21+'6/14-6/20'!I10"
 
 def test_sync_week_dedupes_by_note():
     reads = {
-        "'Monthly Budget'!C20": ([["200"]], [[""]]),
+        "'Monthly Budget'!C21": ([["200"]], [[""]]),
         "'6/21-6/27'!A2:F2000": ([["Sidecar Doughnuts", "$6.50", "Variable", "Food", "6/24/2026", ""]],
                                   [["teller-id:txn_1"]]),
     }
@@ -61,7 +61,7 @@ def test_sync_week_dedupes_by_note():
 def test_sync_week_distinct_teller_id_same_content_not_dropped():
     # txn_1 already synced (has teller-id note); txn_2 has same content but different id -> must be added
     reads = {
-        "'Monthly Budget'!C20": ([["200"]], [[""]]),
+        "'Monthly Budget'!C21": ([["200"]], [[""]]),
         "'6/21-6/27'!A2:F2000": (
             [["Sidecar Doughnuts", "6.5", "Variable", "Food", "6/24/2026", ""]],
             [["teller-id:txn_1"]],
