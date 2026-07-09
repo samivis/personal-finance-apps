@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.svisai.dailybudget</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/svisai/Desktop/projects/personal-finance-apps/scripts/run_scheduled.sh</string>
+  </array>
+  <!-- A few times a day: 9am, 3pm, 9pm -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
+  <key>StandardOutPath</key><string>/Users/svisai/Library/Logs/daily-budget.log</string>
+  <key>StandardErrorPath</key><string>/Users/svisai/Library/Logs/daily-budget.log</string>
+</dict>
+</plist>
